@@ -20,6 +20,7 @@ from board_util import (
 )
 import numpy as np
 import re
+from rules import Rules
 
 
 class GtpConnection:
@@ -51,6 +52,8 @@ class GtpConnection:
             "list_commands": self.list_commands_cmd,
             "play": self.play_cmd,
             "legal_moves": self.legal_moves_cmd,
+            "policy": self.policy_cmd,
+            "policy_moves": self.policy_moves_cmd,
             "gogui-rules_game_id": self.gogui_rules_game_id_cmd,
             "gogui-rules_board_size": self.gogui_rules_board_size_cmd,
             "gogui-rules_legal_moves": self.gogui_rules_legal_moves_cmd,
@@ -70,6 +73,8 @@ class GtpConnection:
             "genmove": (1, "Usage: genmove {w,b}"),
             "play": (2, "Usage: play {b,w} MOVE"),
             "legal_moves": (1, "Usage: legal_moves {w,b}"),
+            "policy": (1, "Usage: random rulebased"),
+            "policy_moves": (0, ""),
         }
 
     def write(self, data):
@@ -219,6 +224,25 @@ class GtpConnection:
             gtp_moves.append(format_point(coords))
         sorted_moves = " ".join(sorted(gtp_moves))
         self.respond(sorted_moves)
+
+    def policy_cmd(self, args):
+        self.go_engine.random_simulation = args[0] == "random"
+
+    def policy_moves_cmd(self, args):
+        rules = Rules(self.board, self.board.current_player, self.go_engine.random_simulation == "random")
+        moveType, moveList = rules.getMoves()
+
+        if len(moveList) == 0:
+            moveType = None
+            self.respond("")
+
+        else:
+            formatted = []
+            for move in moveList:
+                formatted.append(format_point(point_to_coord(move, self.board.size)))
+            formatted.sort()
+            self.respond(moveType + " " + " ".join(formatted))
+
         
     def play_cmd(self, args):
         """
@@ -263,12 +287,14 @@ class GtpConnection:
             return
         board_color = args[0].lower()
         color = color_to_int(board_color)
-        move = self.go_engine.get_move(self.board, color)
+        rules = Rules(self.board, self.board.current_player, self.go_engine.random_simulation == "random")
+        moveType, moveList = rules.getMoves()
+        move = moveList[0]
         move_coord = point_to_coord(move, self.board.size)
         move_as_string = format_point(move_coord)
         if self.board.is_legal(move, color):
             self.board.play_move(move, color)
-            self.respond(move_as_string.lower())
+            self.respond(move_as_string.upper())
         else:
             self.respond("Illegal move: {}".format(move_as_string))
 

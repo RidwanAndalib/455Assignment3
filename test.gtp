@@ -1,0 +1,13 @@
+boardsize 7
+policy rulebased
+clear_board
+play B B1
+play W A3
+play B B2
+play W A4
+play B B3
+play W C4
+play B B4
+play W C3
+30 policy_moves
+#?[Random B3]
