@@ -227,6 +227,7 @@ class GtpConnection:
 
     def policy_cmd(self, args):
         self.go_engine.random_simulation = args[0] == "random"
+        self.respond("")
 
     def policy_moves_cmd(self, args):
         rules = Rules(self.board, self.board.current_player, self.go_engine.random_simulation == "random")
